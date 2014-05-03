@@ -137,6 +137,18 @@ class GitExeRepo(object):
             else:
                 _git('read-tree', '--empty')
 
+    def discard_all(self):
+        """Discard all changes."""
+        with _cd(self.workdir):
+            self.stage_all()
+            head = _git('rev-parse', '--verify', '-q', 'HEAD')
+            if not head:
+                paths = _git('ls-files', '-z').rstrip('\0 ').split('\0')
+                for path in paths:
+                    os.remove(path)
+            else:
+                _git('reset', '--hard', head)
+
     def commit(self, message, ref=None):
         """Create a commit."""
         with _cd(self.path):
@@ -210,6 +222,16 @@ class PyGit2Repo(object):
             head_tree = head_commit.tree.hex
             self.git.index.read_tree(head_tree)
         self.git.index.write()
+
+    def discard_all(self):
+        """Discard all changes."""
+        if self.git.head_is_unborn:
+            self.stage_all()
+            for path, _ in self.git.status().items():
+                os.remove(path)
+        else:
+            self.stage_all()
+            self.git.reset(self.git.head.target, pygit2.GIT_RESET_HARD)
 
     def commit(self, message, ref=None):
         """Create a commit."""

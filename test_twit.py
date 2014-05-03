@@ -119,6 +119,19 @@ class SharedTestMixin(object):
         self.repo.unstage_all()
         self.assert_empty_stage()
 
+    def test_discard_all(self):
+        self.write_file('file1')
+        self.repo.discard_all()
+        self.assertFalse(os.path.exists('file1'))
+        self.commit_file('file1', 'original')
+        self.write_file('file1', 'changes')
+        self.write_file('file2')
+        self.repo.discard_all()
+        self.assertFalse(os.path.exists('file2'))
+        with open('file1') as rfile:
+            contents = rfile.read()
+        self.assertEqual(contents, 'original')
+
     def test_commit(self):
         self.write_file('file1')
         _git('add', 'file1')
