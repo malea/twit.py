@@ -52,9 +52,9 @@ class SharedTestMixin(object):
             self.assertEqual(line[1], ' ')
 
     def test_current_branch(self):
-        self.assertEqual('refs/heads/master', self.repo.current_branch)
+        self.assertEqual('master', self.repo.current_branch)
         _git('checkout', '-b', 'newbranch')
-        self.assertEqual('refs/heads/newbranch', self.repo.current_branch)
+        self.assertEqual('newbranch', self.repo.current_branch)
 
         self.commit_file('README')
         head_commit = _git('rev-parse', 'HEAD')
@@ -68,6 +68,33 @@ class SharedTestMixin(object):
         _git('branch', 'newbranch')
         self.assertItemsEqual(['refs/heads/master', 'refs/heads/newbranch'],
                 self.repo.refs)
+        _git('tag', 'v1.0')
+        self.assertItemsEqual(['refs/heads/master', 'refs/heads/newbranch',
+            'refs/tags/v1.0'], self.repo.refs)
+
+    def test_branches(self):
+        self.commit_file('README')
+        self.assertItemsEqual(['master'], self.repo.branches)
+        _git('branch', 'newbranch')
+        self.assertItemsEqual(['master', 'newbranch'],
+                self.repo.branches)
+        _git('tag', 'v1.0')
+        self.assertItemsEqual(['master', 'newbranch'],
+                self.repo.branches)
+
+    def test_dirty(self):
+        self.write_file('README', 'original')
+        self.assertTrue(self.repo.dirty)
+        _git('add', 'README')
+        _git('commit', '-m', 'added README')
+        self.assertFalse(self.repo.dirty)
+        self.write_file('README', 'changed')
+        self.assertTrue(self.repo.dirty)
+        _git('add', 'README')
+        _git('commit', '-m', 'changed README')
+        self.assertFalse(self.repo.dirty)
+        self.write_file('new_file', 'new')
+        self.assertTrue(self.repo.dirty)
 
     def test_stage_all(self):
         self.commit_file('README', 'original')

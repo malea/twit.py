@@ -90,16 +90,38 @@ class GitExeRepo(object):
     def current_branch(self):
         """Get the current branch."""
         with _cd(self.path):
-            branch = _git('symbolic-ref', '-q', 'HEAD')
-            if not branch:
+            ref = _git('symbolic-ref', '-q', 'HEAD')
+            if not ref:
                 raise DetachedHead
-            return branch
+            return re.sub('^refs/heads/', '', ref)
 
     @property
     def refs(self):
         """Get a list of all references."""
         with _cd(self.path):
             return _git('for-each-ref', '--format', '%(refname)').split('\n')
+
+    @property
+    def branches(self):
+        """Get a list of all branches."""
+        return [
+            re.sub('^refs/heads/', '', ref)
+            for ref in self.refs
+            if ref.startswith('refs/heads/')
+        ]
+
+    @property
+    def dirty(self):
+        """Check for modified or untracked files."""
+        with _cd(self.workdir):
+            status = _git('status', '-z').rstrip('\0 ')
+            if not status:
+                return
+            for line in status.split('\0'):
+                wstat = line[1] # status of work tree
+                if wstat not in (' ', '!'):
+                    return True
+            return False
 
     def stage_all(self):
         """Stage all changes in the working directory."""
@@ -149,12 +171,24 @@ class PyGit2Repo(object):
         """Get the current branch."""
         if self.git.head_is_detached:
             raise DetachedHead
-        return self.git.lookup_reference('HEAD').target
+        ref = self.git.lookup_reference('HEAD').target
+        return re.sub('^refs/heads/', '', ref)
 
     @property
     def refs(self):
         """Get a list of all references."""
         return self.git.listall_references()
+
+    @property
+    def branches(self):
+        """Get a list of all branches."""
+        return self.git.listall_branches()
+
+    @property
+    def dirty(self):
+        """Check for modified or untracked files."""
+        return any((flag != pygit2.GIT_STATUS_CURRENT
+                    for path, flag in self.git.status().items()))
 
     def stage_all(self):
         """Stage all changes in the working directory."""
