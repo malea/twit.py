@@ -135,7 +135,7 @@ class SharedTestMixin(object):
         self.assert_empty_stage()
         refs = _git('for-each-ref', '--format', '%(refname)').split('\n')
         ref_folders = [os.path.dirname(ref) for ref in refs]
-        self.assertIn('refs/hidden/heads/twit/master', ref_folders)
+        self.assertIn('refs/hidden/tags/twit', ref_folders)
 
 # Use the GitRepoTestMixin to test GitExeRepo
 class GitExeRepoTestCase(unittest.TestCase, SharedTestMixin):

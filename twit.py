@@ -234,9 +234,8 @@ class TwitMixin(object):
     def save(self):
         """Save a snapshot of the working directory."""
         self.stage_all()
-        short_branch = re.sub('^refs/heads/', '', self.current_branch)
         now = int(time.time())
-        ref = 'refs/hidden/heads/twit/{}/{}'.format(short_branch, now)
+        ref = 'refs/hidden/tags/twit/{}'.format(now)
         self.commit('Snapshot taken via `twit save`.', ref=ref)
         self.unstage_all()
 
