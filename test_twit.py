@@ -38,14 +38,14 @@ class SharedTestMixin(object):
         _git('commit', '-m', 'Created {}'.format(name))
 
     def assert_empty_stage(self):
-        status = _git('status', '-z').strip('\0 ')
+        status = _git('status', '-z').rstrip('\0 ')
         if not status:
             return
         for line in status.split('\0'):
             self.assertIn(line[0], (' ', '?'))
 
     def assert_clean_workdir(self):
-        status = _git('status', '-z').strip('\0 ')
+        status = _git('status', '-z').rstrip('\0 ')
         if not status:
             return
         for line in status.split('\0'):

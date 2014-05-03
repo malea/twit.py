@@ -60,7 +60,7 @@ def _git(*args):
         stdout = stdout.decode()
     if 'fatal: Not a git repository' in stdout:
         raise NotARepository("current directory is not part of a repository")
-    return stdout.strip()
+    return stdout.rstrip()
 
 
 @contextlib.contextmanager
