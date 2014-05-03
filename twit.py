@@ -10,7 +10,7 @@ import contextlib
 import click
 
 try:
-    import github3
+    import github3  # NOQA
     GITHUB3 = True
 except ImportError:
     GITHUB3 = False
@@ -24,27 +24,33 @@ except ImportError:
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
 
+
 class TwitError(Exception):
     """Generic error for Twit."""
+
 
 class NotARepository(TwitError):
     """Raised when not in a Git repository."""
 
+
 class DetachedHead(TwitError):
     """Raised when the repository is in detached HEAD mode."""
+
 
 class GitError(TwitError):
     """The git subprocess produced an error."""
 
+
 class CannotFindGit(GitError):
     """Script could not locate the git executable."""
+
 
 def _git(*args):
     """Delegate to the Git executable."""
     try:
         proc = subprocess.Popen(('git',) + args, stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT)
-        stdout, stderr = proc.communicate()
+                                stderr=subprocess.STDOUT)
+        stdout, _ = proc.communicate()
     except OSError as error:
         if error.errno == os.errno.ENOENT:
             raise CannotFindGit("git executable not found")
@@ -56,6 +62,7 @@ def _git(*args):
         raise NotARepository("current directory is not part of a repository")
     return stdout.strip()
 
+
 @contextlib.contextmanager
 def _cd(path):
     """Context manager to temporarily change directory."""
@@ -63,6 +70,7 @@ def _cd(path):
     os.chdir(path)
     yield
     os.chdir(old_cwd)
+
 
 class GitExeRepo(object):
     """Git repository backed by Git plumbing shell commands."""
@@ -120,6 +128,7 @@ class GitExeRepo(object):
             if ref:
                 _git('update-ref', ref, commit)
 
+
 class PyGit2Repo(object):
     """Git repository backed by pygit2."""
 
@@ -132,7 +141,7 @@ class PyGit2Repo(object):
         try:
             repo_path = pygit2.discover_repository(os.getcwd())
         except KeyError:
-            raise NotARepository("current directory is not part of a repository")
+            raise NotARepository("current directory not part of a repository")
         return cls(repo_path)
 
     @property
@@ -184,6 +193,7 @@ class PyGit2Repo(object):
             ref = self.git.lookup_reference('HEAD').target
         self.git.create_commit(ref, author, author, message, tree, parents)
 
+
 class TwitMixin(object):
     """Non-backend-specific Twit methods."""
 
@@ -191,20 +201,25 @@ class TwitMixin(object):
         """Save a snapshot of the working directory."""
         self.stage_all()
         short_branch = re.sub('^refs/heads/', '', self.current_branch)
-        ref = 'refs/hidden/heads/twit/{}/{}'.format(short_branch, int(time.time()))
+        now = int(time.time())
+        ref = 'refs/hidden/heads/twit/{}/{}'.format(short_branch, now)
         self.commit('Snapshot taken via `twit save`.', ref=ref)
         self.unstage_all()
+
 
 class PyGit2TwitRepo(PyGit2Repo, TwitMixin):
     """Twit repo backed by PyGit2."""
 
+
 class GitExeTwitRepo(GitExeRepo, TwitMixin):
     """Twit repo backed by GitExe."""
+
 
 if PYGIT2:
     TwitRepo = PyGit2TwitRepo
 else:
     TwitRepo = GitExeTwitRepo
+
 
 @click.group()
 def main():
@@ -213,8 +228,9 @@ def main():
     For help on a subcommand, run:
 
         twit help SUBCOMMAND
-    
+
     """
+
 
 @main.command()
 def save():
@@ -222,10 +238,11 @@ def save():
     repo = TwitRepo.from_cwd()
     repo.save()
 
-@main.command()
+
+@main.command('help')
 @click.argument('subcommand', required=False)
 @click.pass_context
-def help(context, subcommand):
+def help_(context, subcommand):
     """Print help for a subcommand."""
     if subcommand is None:
         click.echo(main.get_help(context))
@@ -236,6 +253,7 @@ def help(context, subcommand):
             context.exit(1)
         command = main.commands[subcommand]
         click.echo(command.get_help(context))
+
 
 if __name__ == '__main__':
     main()
