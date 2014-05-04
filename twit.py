@@ -335,6 +335,7 @@ def save():
     """Take a snapshot of your current work."""
     repo = TwitRepo.from_cwd()
     repo.save()
+    click.echo('Snapshot saved.')
 
 
 @main.command('help')
