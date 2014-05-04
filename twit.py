@@ -288,6 +288,14 @@ class PyGit2Repo(object):
 class TwitMixin(object):
     """Non-backend-specific Twit methods."""
 
+    @property
+    def snapshots(self):
+        """Return a list of Twit snaphsots."""
+        return [
+            ref for ref in self.refs
+            if ref.startswith('refs/hidden/tags/twit/')
+        ]
+
     def save(self):
         """Save a snapshot of the working directory."""
         self.stage_all()
