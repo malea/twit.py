@@ -5,7 +5,8 @@ import shutil
 import tempfile
 import unittest
 
-from twit import (GitExeTwitRepo, PyGit2TwitRepo, DetachedHead, _cd, _git)
+from twit import (GitExeTwitRepo, PyGit2TwitRepo, DetachedHead, DirtyWorkTree,
+        InvalidRef, _cd, _git)
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
@@ -131,6 +132,17 @@ class SharedTestMixin(object):
         with open('file1') as rfile:
             contents = rfile.read()
         self.assertEqual(contents, 'original')
+
+    def test_safe_checkout(self):
+        # TODO: smart handling of unborn branches
+        # self.repo.safe_checkout('master')
+        self.commit_file('file1', 'foo')
+        commit1 = _git('rev-parse', 'HEAD')
+        self.repo.safe_checkout('master')
+        self.assertEqual('refs/heads/master', _git('symbolic-ref', '-q', 'HEAD'))
+        _git('branch', 'bar')
+        self.repo.safe_checkout('bar')
+        self.assertEqual('refs/heads/bar', _git('symbolic-ref', '-q', 'HEAD'))
 
     def test_commit(self):
         self.write_file('file1')

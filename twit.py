@@ -37,6 +37,14 @@ class DetachedHead(TwitError):
     """Raised when the repository is in detached HEAD mode."""
 
 
+class DirtyWorkTree(TwitError):
+    """Raised when the work tree is dirty."""
+
+
+class InvalidRef(TwitError):
+    """Raised when a bad reference is provided."""
+
+
 class GitError(TwitError):
     """The git subprocess produced an error."""
 
@@ -149,6 +157,15 @@ class GitExeRepo(object):
             else:
                 _git('reset', '--hard', head)
 
+    def safe_checkout(self, ref):
+        """Update a clean work tree to match a reference."""
+        if self.dirty:
+            raise DirtyWorkTree
+        with _cd(self.workdir):
+            if not _git('rev-parse', '--verify', '-q', ref):
+                raise InvalidRef
+            _git('checkout', '-q', ref)
+
     def commit(self, message, ref=None):
         """Create a commit."""
         with _cd(self.path):
@@ -232,6 +249,24 @@ class PyGit2Repo(object):
         else:
             self.stage_all()
             self.git.reset(self.git.head.target, pygit2.GIT_RESET_HARD)
+
+    def safe_checkout(self, ref):
+        """Update a clean work tree to match a reference."""
+        if self.dirty:
+            raise DirtyWorkTree
+        target = None
+        for prefix in ('', 'refs/heads/', 'refs/tags/'):
+            try:
+                target = self.git.lookup_reference(prefix + ref).name
+                break
+            except (KeyError, ValueError):
+                continue
+        if target is None:
+            try:
+                target = self.git.revparse_single(ref)
+            except KeyError:
+                raise InvalidRef
+        self.git.checkout(target)
 
     def commit(self, message, ref=None):
         """Create a commit."""
