@@ -119,7 +119,17 @@ class SharedTestMixin(object):
         _git('add', 'file3')
         self.repo.unstage_all()
         self.assert_empty_stage()
-
+        with _cd('subdir'):
+            self.write_file('subfile')
+            _git('add', 'subfile')
+            self.repo.unstage_all()
+            self.assert_empty_stage()
+            self.commit('subfile')
+            self.write_file('subfile2')
+            _git('add','subfile2')
+            self.repo.unstage_all()
+            self.assert_empty_stage()
+                     
     def test_discard_all(self):
         self.write_file('file1')
         self.repo.discard_all()
